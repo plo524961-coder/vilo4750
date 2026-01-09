@@ -1,0 +1,26 @@
+name: Cloudflare RDP
+on: workflow_dispatch
+jobs:
+  cf-rdp:
+    runs-on: windows-latest
+    steps:
+      - name: Enable RDP (Standard)
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
+          
+      - name: Create User
+        run: |
+          net user RDPUser "Pass123!@#" /add
+          net localgroup administrators RDPUser /add
+          
+      - name: Start Cloudflare Tunnel
+        run: |
+          # تحميل Cloudflare
+          Invoke-WebRequest -Uri https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
+          
+          # تشغيل النفق وعرض الرابط في السجلات
+          Start-Process -FilePath ".\cloudflared.exe" -ArgumentList "tunnel --url tcp://localhost:3389" -NoNewWindow -PassThru
+          
+      - name: Loop
+        run: while($true) { Start-Sleep -Seconds 60 }
